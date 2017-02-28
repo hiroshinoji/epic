@@ -5,6 +5,15 @@ import epic.util.ProcessTextMain
 import epic.models.ParserSelector
 
 
+case class TaggedToken(word: String, pos: String)
+
+object TaggedToken {
+  def apply(taggedWord: String): TaggedToken = {
+    val (word, pos) = taggedWord.splitAt(taggedWord.lastIndexOf('/'))
+    TaggedToken(word, pos)
+  }
+}
+
 object ParseTaggedText extends ProcessTextMain[Parser[AnnotatedLabel, String], Tree[AnnotatedLabel]] {
 
 
