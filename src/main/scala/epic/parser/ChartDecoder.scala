@@ -33,6 +33,8 @@ case class NoParseException(msg: String, sentence: IndexedSeq[Any], cause: Throw
  */
 trait ChartDecoder[L, W] extends Serializable{
   def extractBestParse(marginal: ParseMarginal[L, W]):BinarizedTree[L]
+  def extractBestParse(marginal: ParseMarginal[L, W], okTag: (Int, L)=>Boolean):BinarizedTree[L] =
+    sys.error("Parsing with POS constraints is unsupported.")
   def wantsMaxMarginal: Boolean = false
 }
 
@@ -55,8 +57,13 @@ case class ViterbiDecoder[L, W]() extends ChartDecoder[L, W] with Serializable w
   override def extractBestParse(marginal: ParseMarginal[L, W]): BinarizedTree[L] = {
     extractMaxDerivationParse(marginal).map(_._1)
   }
+  override def extractBestParse(marginal: ParseMarginal[L, W], okTag: (Int, L)=>Boolean):BinarizedTree[L] = {
+    extractMaxDerivationParse(marginal, okTag).map(_._1)
+  }
+  def extractMaxDerivationParse(marginal: ParseMarginal[L, W]): BinarizedTree[(L, Int)] =
+    extractMaxDerivationParse(marginal, (_,_)=>true)
 
-  def extractMaxDerivationParse(marginal: ParseMarginal[L, W]): BinarizedTree[(L, Int)] = {
+  def extractMaxDerivationParse(marginal: ParseMarginal[L, W], okTag: (Int, L)=>Boolean): BinarizedTree[(L, Int)] = {
     assert(marginal.isMaxMarginal, "Viterbi only makes sense for max marginal marginals!")
     import marginal._
     val labelIndex = topology.labelIndex
@@ -75,7 +82,10 @@ case class ViterbiDecoder[L, W]() extends ChartDecoder[L, W] with Serializable w
         val ruleScore = anchoring.scoreUnaryRule(begin, end, r, refR)
         val b = topology.child(r)
         val refB = refined.childRefinement(r, refR)
-        val score = ruleScore + insideBotScore(begin, end, b, refB)
+        val _score = ruleScore + insideBotScore(begin, end, b, refB)
+        val score =
+          if (begin + 1 == end && !okTag(begin, labelIndex.get(b))) Double.NegativeInfinity
+          else _score
         if (score > maxScore) {
           maxScore = score
           maxChild = b
@@ -149,11 +159,13 @@ case class ViterbiDecoder[L, W]() extends ChartDecoder[L, W] with Serializable w
 }
 
 abstract class ProjectingChartDecoder[L, W](proj: ChartProjector[L, W]) extends ChartDecoder[L, W] {
-  def extractBestParse(marginal: ParseMarginal[L, W]): BinarizedTree[L] = {
+  def extractBestParse(marginal: ParseMarginal[L, W]): BinarizedTree[L] = 
+    extractBestParse(marginal, (_,_)=>true)
+  override def extractBestParse(marginal: ParseMarginal[L, W], okTag: (Int, L)=>Boolean):BinarizedTree[L] = {
     val anchoring = proj.project(marginal)
     val newMarg = anchoring.maxMarginal
     assert(!newMarg.logPartition.isInfinite, marginal.logPartition + " " + newMarg.logPartition)
-    new ViterbiDecoder[L, W].extractBestParse(newMarg)
+    new ViterbiDecoder[L, W].extractBestParse(newMarg, okTag)
   }
 }
 

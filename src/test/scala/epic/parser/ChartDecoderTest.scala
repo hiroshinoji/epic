@@ -35,6 +35,10 @@ class ChartDecoderTest extends FunSuite with ParserTestHarness {
     assert(res.f1 > 0.6, res.f1)
   }
 
+  test("ViterbiDecoder with pos restriction") {
+
+  }
+
   test("MaxRuleProductDecoder") {
     val gen = Parser(ParserTestHarness.refinedGrammar, new MaxRuleProductDecoder[AnnotatedLabel, String])
     val res = evalParser(getTestTrees(), gen)
