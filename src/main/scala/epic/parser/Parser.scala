@@ -43,7 +43,11 @@ final case class Parser[L,W](topology: RuleTopology[L],
   def apply(s: IndexedSeq[W]): Tree[L] = debinarizer(bestBinarizedTree(s))
 
   def withGivenTags(s: IndexedSeq[W], okTag: (Int, L)=>Boolean): Tree[L] =
-    debinarizer(bestBinarizedTree(s, okTag))
+    try debinarizer(bestBinarizedTree(s, okTag))
+    catch {
+      // Backoff to parsing without constraints
+      case e: ParseExtractionException => apply(s)
+    }
 
   /**
    * Returns the best parse for the sentence without debinarizing
