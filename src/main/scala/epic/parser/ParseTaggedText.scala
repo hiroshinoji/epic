@@ -9,10 +9,7 @@ case class TaggedToken(word: String, pos: String)
 
 object TaggedToken {
   def apply(taggedWord: String): TaggedToken = {
-    val lastSlash = taggedWord.lastIndexOf('/') match {
-      case -1 => taggedWord.size
-      case i => i
-    }
+    val lastSlash = taggedWord.lastIndexOf('/')
     val word = taggedWord.take(lastSlash)
     val pos = taggedWord.drop(lastSlash + 1)
     TaggedToken(word, pos)
@@ -32,6 +29,8 @@ object ParseTaggedText extends ProcessTextMain[Parser[AnnotatedLabel, String], T
     val tokens = text.map(TaggedToken(_))
     val words = tokens.map(_.word)
     val poses = tokens.map(_.pos)
+
+    if (!words.forall(!_.isEmpty)) sys.error(s"Input $text is not tagged correctly!")
 
     def okTag(i: Int, tag: AnnotatedLabel) = AnnotatedLabel(poses(i)) == tag.baseAnnotatedLabel
 
