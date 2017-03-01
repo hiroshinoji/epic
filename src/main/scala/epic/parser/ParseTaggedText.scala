@@ -9,7 +9,9 @@ case class TaggedToken(word: String, pos: String)
 
 object TaggedToken {
   def apply(taggedWord: String): TaggedToken = {
-    val (word, pos) = taggedWord.splitAt(taggedWord.lastIndexOf('/'))
+    val lastSlash = taggedWord.lastIndexOf('/')
+    val word = taggedWord.take(lastSlash)
+    val pos = taggedWord.drop(lastSlash + 1)
     TaggedToken(word, pos)
   }
 }
