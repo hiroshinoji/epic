@@ -158,6 +158,7 @@ case class ViterbiDecoder[L, W]() extends ChartDecoder[L, W] with Serializable w
   }
 }
 
+@SerialVersionUID(2289181528197305032L)
 abstract class ProjectingChartDecoder[L, W](proj: ChartProjector[L, W]) extends ChartDecoder[L, W] {
   def extractBestParse(marginal: ParseMarginal[L, W]): BinarizedTree[L] = 
     extractBestParse(marginal, (_,_)=>true)
