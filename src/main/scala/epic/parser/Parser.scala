@@ -46,6 +46,7 @@ final case class Parser[L,W](topology: RuleTopology[L],
     try debinarizer(bestBinarizedTree(s, okTag))
     catch {
       // Backoff to parsing without constraints
+      System.err.println("No parse was found on the given POS tags. Backoffing to parsing without constraints.")
       case e: ParseExtractionException => apply(s)
     }
 
