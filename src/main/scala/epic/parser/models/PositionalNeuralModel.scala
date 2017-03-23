@@ -33,7 +33,7 @@ class PositionalNeuralModel[L, L2, W](annotator: (BinarizedTree[L], IndexedSeq[W
                                       val lexicon: Lexicon[L, W],
                                       refinedTopology: RuleTopology[L2],
                                       refinements: GrammarRefinements[L, L2],
-                                      labelFeaturizer: RefinedFeaturizer[L, W, Feature],
+                                      val labelFeaturizer: RefinedFeaturizer[L, W, Feature],
                                       surfaceFeaturizer: Word2VecSurfaceFeaturizerIndexed[W],
                                       depFeaturizer: Word2VecDepFeaturizerIndexed[W],
                                       val transforms: IndexedSeq[OutputTransform[Array[Int],DenseVector[Double]]],
@@ -171,7 +171,7 @@ object PositionalNeuralModel {
                                              val lexicon: Lexicon[L, W],
                                              val refinedTopology: RuleTopology[L2],
                                              val refinements: GrammarRefinements[L, L2],
-                                             labelFeaturizer: RefinedFeaturizer[L, W, Feature],
+                                             val labelFeaturizer: RefinedFeaturizer[L, W, Feature],
                                              val surfaceFeaturizer: Word2VecSurfaceFeaturizerIndexed[W],
                                              depFeaturizer: Word2VecDepFeaturizerIndexed[W],
                                              val layers: IndexedSeq[OutputTransform[Array[Int],DenseVector[Double]]#OutputLayer],
@@ -289,7 +289,7 @@ object PositionalNeuralModel {
       }
     }
 
-    def anchor(w: IndexedSeq[W], cons: ChartConstraints[L]):GrammarAnchoring[L, W] = new ProjectionsGrammarAnchoring[L, L2, W] {
+    class MyAnchoring(w: IndexedSeq[W], cons: ChartConstraints[L]) extends ProjectionsGrammarAnchoring[L, L2, W] {
       
       override def addConstraints(constraints: ChartConstraints[L]): GrammarAnchoring[L, W] = {
         anchor(w, cons & constraints)
@@ -413,5 +413,11 @@ object PositionalNeuralModel {
         score
       }
     }
+
+    def anchor(w: IndexedSeq[W], cons: ChartConstraints[L]) = new MyAnchoring(w, cons)
+    override def goldTagAnchor(w: IndexedSeq[W], t: IndexedSeq[L], cons: ChartConstraints[L]) =
+      new MyAnchoring(w, cons) {
+        override def tagConstraints = lexicon.goldTagAnchor(w, t)
+      }
   }
 }

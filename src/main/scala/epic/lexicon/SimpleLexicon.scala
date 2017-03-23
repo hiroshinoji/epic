@@ -7,6 +7,7 @@ import breeze.util.Index
 
 import scala.collection.immutable.BitSet
 import scala.collection.mutable.Map
+import scala.collection.immutable.{Map=>IMap}
 
 /**
  * A simple lexicon that thresholds to decide when to open up the rare word to all (open) tags
@@ -43,6 +44,11 @@ class SimpleLexicon[L, W](
     def length = w.length
     val x = Array.tabulate(w.length)(pos => byWord.getOrElse(w(pos), openTags))
     def allowedTags(pos: Int): Set[Int] = x(pos)
+  }
+
+  override def goldTagAnchor(w: IndexedSeq[W], tags: IndexedSeq[L]): Anchoring = new Anchoring {
+    def length = w.length
+    def allowedTags(pos: Int): Set[Int] = Set(labelIndex(tags(pos)))
   }
 
   @throws(classOf[ObjectStreamException])

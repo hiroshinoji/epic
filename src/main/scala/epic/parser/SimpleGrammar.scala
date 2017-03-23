@@ -54,8 +54,11 @@ class SimpleGrammar[L, L2, W](val topology: RuleTopology[L],
     ruleScoreArray(refinedRule)
   }
 
-  def anchor(w: IndexedSeq[W], constr: ChartConstraints[L]) = new SimpleGrammar.Anchoring(this, w, constr)
+  def anchor(w: IndexedSeq[W], constr: ChartConstraints[L]) =
+    new SimpleGrammar.Anchoring(this, w, constr)
 
+  override def goldTagAnchor(w: IndexedSeq[W], t: IndexedSeq[L], constr: ChartConstraints[L]) =
+    new SimpleGrammar.GoldTagAnchoring(this, w, t, constr)
 
   override def withPermissiveLexicon: Grammar[L, W] = new SimpleGrammar(topology, lexicon.morePermissive, refinements, refinedTopology, ruleScoreArray, tagScorer)
 
@@ -244,9 +247,7 @@ object SimpleGrammar {
     map.toMap
   }
 
-  case class Anchoring[L, L2, W](grammar: SimpleGrammar[L, L2, W], words: IndexedSeq[W], override val sparsityPattern: ChartConstraints[L]) extends ProjectionsGrammarAnchoring[L, L2, W] {
-
-    override def addConstraints(constraints: ChartConstraints[L]): GrammarAnchoring[L, W] = copy(sparsityPattern = sparsityPattern & constraints)
+  abstract class BaseAnchoring[L, L2, W](grammar: SimpleGrammar[L, L2, W], words: IndexedSeq[W]) extends ProjectionsGrammarAnchoring[L, L2, W] {
 
     def topology = grammar.topology
     def lexicon = grammar.lexicon
@@ -274,6 +275,25 @@ object SimpleGrammar {
       grammar.ruleScore(rule, ref)
     }
 
+  }
+
+  case class Anchoring[L, L2, W](
+    grammar: SimpleGrammar[L, L2, W],
+    words: IndexedSeq[W],
+    override val sparsityPattern: ChartConstraints[L]) extends BaseAnchoring(grammar, words) {
+
+    override def addConstraints(constraints: ChartConstraints[L]): GrammarAnchoring[L, W] = copy(sparsityPattern = sparsityPattern & constraints)
+  }
+
+  case class GoldTagAnchoring[L, L2, W](
+    grammar: SimpleGrammar[L, L2, W],
+    words: IndexedSeq[W],
+    tags: IndexedSeq[L],
+    override val sparsityPattern: ChartConstraints[L]) extends BaseAnchoring(grammar, words) {
+
+    override def addConstraints(constraints: ChartConstraints[L]): GrammarAnchoring[L, W] = copy(sparsityPattern = sparsityPattern & constraints)
+
+    override def tagConstraints = lexicon.goldTagAnchor(words, tags)
   }
 
 }

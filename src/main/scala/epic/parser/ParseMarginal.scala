@@ -85,6 +85,7 @@ object ParseMarginal {
 
   trait Factory[L, W] {
     def apply(w: IndexedSeq[W], constraints: ChartConstraints[L]):ParseMarginal[L, W]
+    def apply(w: IndexedSeq[W], constraints: ChartConstraints[L], goldTags: IndexedSeq[L]):ParseMarginal[L, W] = ???
   }
 
   object Factory {
@@ -120,12 +121,20 @@ object ParseMarginal {
 
 @SerialVersionUID(-875432696804946554L)
 case class StandardChartFactory[L, W](refinedGrammar: Grammar[L, W], maxMarginal: Boolean = false) extends ParseMarginal.Factory[L, W] {
-  def apply(w: IndexedSeq[W], constraints: ChartConstraints[L]):RefinedChartMarginal[L, W] = {
-      val marg = RefinedChartMarginal(refinedGrammar.anchor(w, constraints), maxMarginal = maxMarginal)
-      if (!marg.logPartition.isInfinite) {
-        marg
-      } else {
-        RefinedChartMarginal(refinedGrammar.withPermissiveLexicon.anchor(w, constraints), maxMarginal = maxMarginal)
-      }
+
+  def apply(w: IndexedSeq[W], constraints: ChartConstraints[L]):RefinedChartMarginal[L, W] =
+    mkMarginal(_.anchor(w, constraints))
+
+  override def apply(w: IndexedSeq[W], constraints: ChartConstraints[L], goldTags: IndexedSeq[L]):RefinedChartMarginal[L, W] = {
+    mkMarginal(_.goldTagAnchor(w, goldTags, constraints))
+  }
+
+  def mkMarginal(mkAnchor: Grammar[L,W]=>GrammarAnchoring[L,W]) = {
+    val marg = RefinedChartMarginal(mkAnchor(refinedGrammar), maxMarginal = maxMarginal)
+    if (!marg.logPartition.isInfinite) {
+      marg
+    } else {
+      RefinedChartMarginal(mkAnchor(refinedGrammar.withPermissiveLexicon), maxMarginal = maxMarginal)
+    }
   }
 }

@@ -19,7 +19,7 @@ package projections
 import projections.AnchoredForestProjector.ForestData
 import breeze.collection.mutable.{TriangularArray, OpenAddressHashArray}
 import epic.lexicon.Lexicon
-import epic.constraints.ChartConstraints
+import epic.constraints.{ChartConstraints, TagConstraints}
 
 /**
  * Creates a grammar using only span marginals and unary rule marginals
@@ -70,7 +70,8 @@ case class LabeledSpanProjector[L, W](topology: RuleTopology[L], threshold: Doub
     }
 
     val sparsity = charts.anchoring.sparsityPattern
-    new SpanAnchoring(charts.topology, charts.lexicon, charts.words, sparsity, normSpans, normUnaries)
+    val tagSparsity = charts.anchoring.tagConstraints
+    new SpanAnchoring(charts.topology, charts.lexicon, charts.words, sparsity, normSpans, normUnaries, Some(tagSparsity))
   }
 
 }
@@ -91,7 +92,11 @@ case class SpanAnchoring[L, W](topology: RuleTopology[L],
                                words: IndexedSeq[W],
                                sparsityPattern: ChartConstraints[L],
                                spanScores: Array[OpenAddressHashArray[Double]],
-                               unaryScores: Array[OpenAddressHashArray[Double]])  extends UnrefinedGrammarAnchoring[L, W] {
+                               unaryScores: Array[OpenAddressHashArray[Double]],
+                               tagSparsity: Option[TagConstraints[L]] = None)  extends UnrefinedGrammarAnchoring[L, W] {
+
+  override val tagConstraints = tagSparsity getOrElse (super.tagConstraints)
+
   def addConstraints(cs: ChartConstraints[L]) = copy(sparsityPattern = sparsityPattern & cs)
   def scoreBinaryRule(begin: Int, split: Int, end: Int, rule: Int) = 0.0
 

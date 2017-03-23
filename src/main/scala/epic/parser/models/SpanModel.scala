@@ -79,7 +79,7 @@ class DotProductGrammar[L, L2, W, Feature](val topology: RuleTopology[L],
     new DotProductGrammar(topology, lexicon.morePermissive, refinedTopology, refinements, weights, featurizer)
   }
 
-  def anchor(w: IndexedSeq[W], cons: ChartConstraints[L]):GrammarAnchoring[L, W] = new ProjectionsGrammarAnchoring[L, L2, W] {
+  class MyAnchoring(w: IndexedSeq[W], cons: ChartConstraints[L]) extends ProjectionsGrammarAnchoring[L, L2, W] {
 
     override def addConstraints(constraints: ChartConstraints[L]): GrammarAnchoring[L, W] = {
       anchor(w, cons & constraints)
@@ -119,6 +119,11 @@ class DotProductGrammar[L, L2, W, Feature](val topology: RuleTopology[L],
       score
     }
 
+  }
+
+  def anchor(w: IndexedSeq[W], cons: ChartConstraints[L]):GrammarAnchoring[L, W] = new MyAnchoring(w, cons)
+  override def goldTagAnchor(w: IndexedSeq[W], t: IndexedSeq[L], cons: ChartConstraints[L]) = new MyAnchoring(w, cons) {
+    override def tagConstraints = lexicon.goldTagAnchor(w, t)
   }
 }
 

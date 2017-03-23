@@ -41,9 +41,12 @@ trait Grammar[L, W] extends Serializable {
   def withPermissiveLexicon:Grammar[L, W]
 
   def anchor(words: IndexedSeq[W], constraints: ChartConstraints[L] = ChartConstraints.noSparsity[L]):GrammarAnchoring[L, W]
+
+  def goldTagAnchor(words: IndexedSeq[W], tags: IndexedSeq[L], constraints: ChartConstraints[L]):GrammarAnchoring[L, W] = ???
 }
 
 object Grammar {
+
   def product[L, W](f1: Grammar[L, W], f2: Grammar[L, W]):Grammar[L, W] = new Grammar[L, W] {
     def topology = f1.topology
     def lexicon = f1.lexicon

@@ -13,6 +13,7 @@ trait Lexicon[L, W] extends TagConstraints.Factory[L, W] {
 
   def labelIndex: Index[L]
   def anchor(w: IndexedSeq[W]):Anchoring
+  def goldTagAnchor(w: IndexedSeq[W], t: IndexedSeq[L]):Anchoring = ???
 
   // TODO, should i make TagConstraints be a case class instead of an interface?
   trait Anchoring extends TagConstraints[L] {

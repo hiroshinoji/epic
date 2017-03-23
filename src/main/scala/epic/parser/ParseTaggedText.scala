@@ -24,6 +24,8 @@ object ParseTaggedText extends ProcessTextMain[Parser[AnnotatedLabel, String], T
     ann.render(words, newline = false)
   }
 
+  var strToLabel: Map[String, AnnotatedLabel] = null
+
   // assume each token is word/pos, i.e., the last / separates word and pos
   override def annotate(model: Parser[AnnotatedLabel, String], text: IndexedSeq[String]): Tree[AnnotatedLabel] = {
     val tokens = text.map(TaggedToken(_))
@@ -32,9 +34,13 @@ object ParseTaggedText extends ProcessTextMain[Parser[AnnotatedLabel, String], T
 
     if (!words.forall(!_.isEmpty)) sys.error(s"Input $text is not tagged correctly!")
 
-    def okTag(i: Int, tag: AnnotatedLabel) = AnnotatedLabel(poses(i)) == tag.baseAnnotatedLabel
+    if (strToLabel == null) strToLabel = {
+      val index = model.lexicon.labelIndex
+      index.pairs.map { case (l, i) => l.baseAnnotatedLabel + "" -> index.get(i) }.toMap
+    }
+    def goldTags = poses map strToLabel
 
-    model.withGivenTags(words, okTag _)
+    model.withGivenTags(words, goldTags)
   }
 
   override def classPathLoad(language: String): Parser[AnnotatedLabel, String] = {

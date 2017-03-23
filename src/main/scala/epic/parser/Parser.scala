@@ -42,11 +42,11 @@ final case class Parser[L,W](topology: RuleTopology[L],
    */
   def apply(s: IndexedSeq[W]): Tree[L] = debinarizer(bestBinarizedTree(s))
 
-  def withGivenTags(s: IndexedSeq[W], okTag: (Int, L)=>Boolean): Tree[L] =
-    try debinarizer(bestBinarizedTree(s, okTag))
+  def withGivenTags(s: IndexedSeq[W], goldTags: IndexedSeq[L]): Tree[L] =
+    try debinarizer(bestBinarizedTree(s, goldTags))
     catch {
       // Backoff to parsing without constraints
-      case e: ParseExtractionException =>
+      case e: Throwable =>
         System.err.println("No parse was found on the given POS tags. Backoffing to parsing without constraints.")
         apply(s)
     }
@@ -59,11 +59,15 @@ final case class Parser[L,W](topology: RuleTopology[L],
     decoder.extractBestParse(marginal(s))
   }
 
-  def bestBinarizedTree(s: IndexedSeq[W], okTag: (Int, L)=>Boolean):BinarizedTree[L] =
-    decoder.extractBestParse(marginal(s), okTag)
+  def bestBinarizedTree(s: IndexedSeq[W], goldTags: IndexedSeq[L]):BinarizedTree[L] =
+    decoder.extractBestParse(marginal(s, Some(goldTags)))
 
-  def marginal(w: IndexedSeq[W]): ParseMarginal[L, W] = try {
-    marginalFactory.apply(w, constraintsFactory.constraints(w))
+  def marginal(w: IndexedSeq[W], goldTags: Option[IndexedSeq[L]] = None): ParseMarginal[L, W] = try {
+    val c = constraintsFactory.constraints(w)
+    goldTags match {
+      case Some(tags) => marginalFactory.apply(w, c, tags)
+      case None => marginalFactory.apply(w, c)
+    }
   } catch {
     case ex: NoParseException =>
       try {

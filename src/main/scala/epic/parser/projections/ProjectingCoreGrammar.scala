@@ -29,9 +29,9 @@ case class ProjectingCoreGrammar[L, W](parser: Parser[L, W],
 
   def lexicon = parser.lexicon
 
-  override def withPermissiveLexicon: Grammar[L, W] = {
-    ???
-  }
+  override def withPermissiveLexicon: Grammar[L, W] = this // {
+  //   ???
+  // }
 
   def anchor(words: IndexedSeq[W], constraints: ChartConstraints[L]) = {
     project(words)

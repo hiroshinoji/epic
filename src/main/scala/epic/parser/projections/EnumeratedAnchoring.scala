@@ -19,7 +19,7 @@ import java.io._
 import projections.AnchoredForestProjector.ForestData
 import breeze.collection.mutable.{OpenAddressHashArray, TriangularArray}
 import epic.lexicon.Lexicon
-import epic.constraints.ChartConstraints
+import epic.constraints.{ChartConstraints, TagConstraints}
 import epic.trees.Span
 import java.util
 
@@ -65,7 +65,8 @@ case class AnchoredPCFGProjector[L, W](threshold: Double = Double.NegativeInfini
       else for(ruleScores <- splits) yield normalize(charts.topology, ruleScores, totals)
     }
     val sparsity = charts.anchoring.sparsityPattern
-    new EnumeratedAnchoring(charts.topology, charts.lexicon, charts.words, lexicalScores.map(logify), normUnaries, normBinaries, sparsity)
+    val tagSparsity = charts.anchoring.tagConstraints
+    new EnumeratedAnchoring(charts.topology, charts.lexicon, charts.words, lexicalScores.map(logify), normUnaries, normBinaries, sparsity, Some(tagSparsity))
   }
 
 }
@@ -121,8 +122,11 @@ case class EnumeratedAnchoring[L, W](topology: RuleTopology[L],
                                      unaryScores: Array[OpenAddressHashArray[Double]],
                                      // (begin, end) -> (split-begin) -> rule -> score
                                      binaryScores: Array[Array[OpenAddressHashArray[Double]]],
-                                     sparsityPattern: ChartConstraints[L]) extends UnrefinedGrammarAnchoring[L, W] with Serializable {
+                                     sparsityPattern: ChartConstraints[L],
+                                     tagConst: Option[TagConstraints[L]] = None
+) extends UnrefinedGrammarAnchoring[L, W] with Serializable {
 
+  override def tagConstraints = tagConst getOrElse super.tagConstraints
 
   override def addConstraints(cs: ChartConstraints[L]): UnrefinedGrammarAnchoring[L, W] = copy(sparsityPattern = sparsityPattern & cs)
 
