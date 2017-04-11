@@ -33,7 +33,7 @@ class PositionalNeuralModel[L, L2, W](annotator: (BinarizedTree[L], IndexedSeq[W
                                       val lexicon: Lexicon[L, W],
                                       refinedTopology: RuleTopology[L2],
                                       refinements: GrammarRefinements[L, L2],
-                                      val labelFeaturizer: RefinedFeaturizer[L, W, Feature],
+                                      labelFeaturizer: RefinedFeaturizer[L, W, Feature],
                                       surfaceFeaturizer: Word2VecSurfaceFeaturizerIndexed[W],
                                       depFeaturizer: Word2VecDepFeaturizerIndexed[W],
                                       val transforms: IndexedSeq[OutputTransform[Array[Int],DenseVector[Double]]],
@@ -171,7 +171,7 @@ object PositionalNeuralModel {
                                              val lexicon: Lexicon[L, W],
                                              val refinedTopology: RuleTopology[L2],
                                              val refinements: GrammarRefinements[L, L2],
-                                             val labelFeaturizer: RefinedFeaturizer[L, W, Feature],
+                                             labelFeaturizer: RefinedFeaturizer[L, W, Feature],
                                              val surfaceFeaturizer: Word2VecSurfaceFeaturizerIndexed[W],
                                              depFeaturizer: Word2VecDepFeaturizerIndexed[W],
                                              val layers: IndexedSeq[OutputTransform[Array[Int],DenseVector[Double]]#OutputLayer],
@@ -189,6 +189,10 @@ object PositionalNeuralModel {
     val dcSpanFeatOffset = layers.map(_.index.size).sum + depLayers.map(_.index.size).sum
     val dcUnaryFeatOffset = dcSpanFeatOffset + (if (decoupledLayers.nonEmpty) decoupledLayers(0).index.size else 0)
     val dcBinaryFeatOffset = dcUnaryFeatOffset + (if (decoupledLayers.nonEmpty) decoupledLayers(1).index.size else 0)
+
+    // A hack to allow accessing labelFeaturizer from the internal class (MyAnchoring)
+    // without modifying permission (which prevents correct deserialization).
+    protected def protLabelFeaturizer = labelFeaturizer
     
     override def withPermissiveLexicon: Grammar[L, W] = {
       new PositionalNeuralGrammar(topology, lexicon.morePermissive, refinedTopology, refinements, labelFeaturizer, surfaceFeaturizer,
@@ -325,7 +329,7 @@ object PositionalNeuralModel {
       
       val sspec = surfaceFeaturizer.anchor(w)
       val depSpec = depFeaturizer.anchor(w)
-      val lspec = labelFeaturizer.anchor(w)
+      val lspec = protLabelFeaturizer.anchor(w)
       val fspec = if (maybeSparseSurfaceFeaturizer.isDefined) maybeSparseSurfaceFeaturizer.get.anchor(w) else null
       val sparseFeatsStart = if (maybeSparseSurfaceFeaturizer.isDefined) layers.map(_.index.size).sum + depLayers.map(_.index.size).sum + decoupledLayers.map(_.index.size).sum else -1
 
